@@ -14,20 +14,149 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum ArtistType {
+  VISIONARY_ARTIST
+  CONSUMATE_PROFESSIONAL
+  ANALYZER_ARTIST
+  TECH_ARTIST
+  ENTERTAINER
+  MAVERICK_ARTIST
+  DREAMER_ARTIST
+  FEELER_ARTIST
+  TORTURED_ARTIST
+  SOLO_ARTIST
+}
+
+enum ProjectStatus {
+  WRITING
+  TRACKING
+  PRODUCTION
+  MIXING
+  MASTERING
+  REVIEWING
+  COMPLETED
+  ARCHIVED
+}
+
+enum CreativeWorkType {
+  ENTREPRENEUR
+  CONNECTOR_ORGANIZER
+  FINISHER
+  ENTHUSIASTIC_FACILITATOR
+  COLLABORATOR
+  CREATIVE_INITIATOR
+  TEAM_PLAYER
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum MediaType {
+  VIDEO
+  AUDIO
+  IMAGE
+  ANIMATION
+  INTERACTIVE
+  DOCUMENT_PDF
+  CUSTOM_COMPONENT
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TEXT_INPUT
+  TRUE_FALSE
+  RATING_SCALE
+  SLIDER_INPUT
+  CUSTOM_COMPONENT
+}
+
+enum OptionCategorization {
+  CORRECT
+  INCORRECT
+  PARTIALLY_CORRECT
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  RESTRICTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum Permission {
+  VIEW
+  EDIT
+  ADMIN
+}
+
+enum ProjectPhase {
+  IDEAS_WRITING
+  TRACKING_EDITING
+  MIXING
+  MASTERING
+}
+
+enum TrackingType {
+  DRUMS
+  BASS
+  GUITAR
+  SYNTHS
+  VOCALS
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+  NOT_REQUIRED
+}
+
 model User {
-  id           String  @id @unique
-  email        String
-  firstName    String
-  lastName     String
-  profileImage String
-  customerId   String? @unique
-
-  createdAt DateTime @default(now())
-
-  Site  Site[]
-  posts Post[]
-
-  Subscription Subscription?
+  id                   String               @id @unique
+  email                String
+  firstName            String
+  lastName             String
+  profileImage         String
+  customerId           String?              @unique
+  createdAt            DateTime             @default(now())
+  name                 String? // Made optional
+  username             String?              @unique // Made optional
+  phoneNumber          String?              @unique // Made optional
+  bio                  String?
+  artistType           ArtistType? // Made optional
+  creativeWorkType     CreativeWorkType? // Made optional
+  questionnaireAnswers String?
+  scheduledMeeting     DateTime?
+  courseProgress       String?
+  joinDate             DateTime             @default(now())
+  finishDate           DateTime?
+  friends              User[]               @relation("UserFriends")
+  friendsOf            User[]               @relation("UserFriends")
+  matches              User[]               @relation("UserMatches")
+  matchedBy            User[]               @relation("UserMatches")
+  socialLinks          SocialLink[]
+  timeLogs             TimeLog[]
+  projects             Project[]
+  quizzes              Quiz[]
+  courses              Course[]
+  completedConcepts    ConceptCompletion[]
+  courseSubscriptions  CourseSubscription[]
+  activityFeed         ActivityFeed[]
+  userEngagements      UserEngagement[]
+  sites                Site[]
+  posts                Post[]
+  projectUsers         ProjectUser[]
+  quizProgresses       QuizProgress[]
+  subscription         Subscription?
+  courseReviews        CourseReview[]
 }
 
 model Site {
@@ -37,28 +166,25 @@ model Site {
   subdirectory String   @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  imageUrl String?
-  User     User?   @relation(fields: [userId], references: [id])
-  userId   String?
-  posts    Post[]
+  imageUrl     String?
+  userId       String?
+  User         User?    @relation(fields: [userId], references: [id])
+  posts        Post[]
 }
 
 model Post {
-  id String @id @default(uuid())
-
+  id               String   @id @default(uuid())
   title            String
   articleContent   Json
   smallDescription String
   image            String
-  slug             String @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-  User      User?    @relation(fields: [userId], references: [id])
-  userId    String?
-  Site      Site?    @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  siteId    String?
+  slug             String   @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  userId           String?
+  User             User?    @relation(fields: [userId], references: [id])
+  siteId           String?
+  Site             Site?    @relation(fields: [siteId], references: [id], onDelete: Cascade)
 }
 
 model Subscription {
@@ -70,7 +196,255 @@ model Subscription {
   currentPeriodEnd     Int
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+  userId               String?  @unique
+  User                 User?    @relation(fields: [userId], references: [id])
+}
 
-  User   User?   @relation(fields: [userId], references: [id])
-  userId String? @unique
+model SocialLink {
+  id       Int    @id @default(autoincrement())
+  platform String
+  url      String
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+}
+
+model Project {
+  id                 Int              @id @default(autoincrement())
+  name               String
+  status             ProjectStatus
+  phase              ProjectPhase
+  lyrics             String?
+  chords             String?
+  generalNotes       String?
+  inspirationLinks   String[] // Links to inspiration sources
+  referenceLinks     String[]
+  tempoTrack         String? // Path to MIDI file
+  chartId            String?
+  autoGeneratedChart String? // Path to the auto-generated chart
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  ownerId            String
+  owner              User             @relation(fields: [ownerId], references: [id])
+  users              ProjectUser[]
+  timeLogs           TimeLog[]
+  trackingStatus     TrackingStatus[]
+  demoVersions       DemoVersion[]
+}
+
+model TrackingStatus {
+  id        Int          @id @default(autoincrement())
+  projectId Int
+  type      TrackingType
+  status    TaskStatus
+  notes     String?
+  channels  Int? // Number of channels used
+  project   Project      @relation(fields: [projectId], references: [id])
+}
+
+model DemoVersion {
+  id            Int      @id @default(autoincrement())
+  projectId     Int
+  versionNumber Int
+  description   String?
+  filePath      String // Path to the demo version file
+  createdAt     DateTime @default(now())
+  project       Project  @relation(fields: [projectId], references: [id])
+}
+
+model TimeLog {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  projectId Int?
+  timeSpent Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  project   Project? @relation(fields: [projectId], references: [id])
+}
+
+model Quiz {
+  id             Int            @id @default(autoincrement())
+  title          String
+  quizId         String         @unique
+  questionCount  Int
+  description    String?
+  difficulty     Difficulty
+  avgQuizTime    Int?
+  tags           String[] // Tags or categories
+  randomizeOrder Boolean
+  maxAttempts    Int?
+  passMark       Int?
+  visibility     Visibility
+  language       String?
+  retakePolicy   String?
+  prerequisites  Quiz[]         @relation("QuizPrerequisites")
+  prerequisiteOf Quiz[]         @relation("QuizPrerequisites")
+  resources      QuizResource[]
+  questions      Question[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  ownerId        String
+  owner          User           @relation(fields: [ownerId], references: [id])
+  reviews        CourseReview[]
+  quizProgresses QuizProgress[]
+}
+
+model QuizResource {
+  id            Int       @id @default(autoincrement())
+  referenceName String
+  mediaType     MediaType
+  link          String?
+  quizId        Int
+  quiz          Quiz      @relation(fields: [quizId], references: [id])
+}
+
+model Question {
+  id                Int              @id @default(autoincrement())
+  subject           String?
+  text              String
+  type              QuestionType
+  media             QuestionMedia[]
+  score             Int
+  timeLimit         Int?
+  feedbackEnabled   Boolean
+  feedback          String?
+  skippable         Boolean
+  randomizeOptions  Boolean
+  points            Int?
+  hint              String?
+  difficulty        Difficulty
+  answerExplanation String?
+  options           QuestionOption[]
+  quizId            Int
+  quiz              Quiz             @relation(fields: [quizId], references: [id])
+}
+
+model QuestionMedia {
+  id             Int      @id @default(autoincrement())
+  mediaReference String
+  questionId     Int
+  question       Question @relation(fields: [questionId], references: [id])
+}
+
+model QuestionOption {
+  id             Int                  @id @default(autoincrement())
+  text           String
+  categorization OptionCategorization
+  feedback       String?
+  media          String?
+  shuffle        Boolean
+  partialCredit  Boolean
+  idealAnswers   String[]
+  questionId     Int
+  question       Question             @relation(fields: [questionId], references: [id])
+}
+
+model Course {
+  id                  Int                  @id @default(autoincrement())
+  title               String
+  description         String?
+  price               Float
+  completionPercent   Float                @default(0.0)
+  sections            Section[]
+  curriculumPlan      CurriculumPlan?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  ownerId             String
+  owner               User                 @relation(fields: [ownerId], references: [id])
+  reviews             CourseReview[]
+  courseSubscriptions CourseSubscription[]
+}
+
+model Section {
+  id                Int       @id @default(autoincrement())
+  title             String
+  courseId          Int
+  course            Course    @relation(fields: [courseId], references: [id])
+  completionPercent Float     @default(0.0)
+  concepts          Concept[]
+}
+
+model Concept {
+  id                Int                 @id @default(autoincrement())
+  title             String
+  content           String?
+  Section           Section?            @relation(fields: [sectionId], references: [id])
+  sectionId         Int?
+  ConceptCompletion ConceptCompletion[]
+}
+
+model ProjectUser {
+  id          Int        @id @default(autoincrement())
+  projectId   Int
+  userId      String
+  permissions Permission
+  credits     String?
+  project     Project    @relation(fields: [projectId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+}
+
+model QuizProgress {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  quizId      Int
+  progress    Float
+  score       Int?
+  completedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id])
+  quiz        Quiz      @relation(fields: [quizId], references: [id])
+}
+
+model CourseReview {
+  id        Int      @id @default(autoincrement())
+  content   String
+  rating    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quizId    Int
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  Int?
+  course    Course?  @relation(fields: [courseId], references: [id])
+}
+
+model CourseSubscription {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  courseId     Int
+  subscribedAt DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+  course       Course   @relation(fields: [courseId], references: [id])
+}
+
+model ConceptCompletion {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  conceptId   Int
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  concept     Concept  @relation(fields: [conceptId], references: [id])
+}
+
+model ActivityFeed {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  action    String
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model UserEngagement {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  type      String
+  content   String
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model CurriculumPlan {
+  id       Int    @id @default(autoincrement())
+  courseId Int    @unique
+  content  String
+  course   Course @relation(fields: [courseId], references: [id])
 }

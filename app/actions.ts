@@ -6,8 +6,15 @@ import { PostSchema, SiteCreationSchema, siteSchema } from "./utils/zodSchemas";
 import prisma from "./utils/db";
 import { requireUser } from "./utils/requireUser";
 import { stripe } from "./utils/stripe";
+import { z } from "zod";
 
 export async function CreateSiteAction(prevState: any, formData: FormData) {
+  const result = siteSchema.safeParse(Object.fromEntries(formData));
+
+  if (!result.success) {
+    return { errors: result.error.flatten() };
+  }
+
   const user = await requireUser();
 
   const [subStatus, sites] = await Promise.all([
@@ -92,6 +99,7 @@ export async function CreateSiteAction(prevState: any, formData: FormData) {
     return redirect("/dashboard/sites");
   }
 }
+
 export async function CreatePostAction(prevState: any, formData: FormData) {
   const user = await requireUser();
 
